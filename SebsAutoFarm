@@ -1,24 +1,19 @@
---[[
-
-Made By Yours Truly : $eba#6028
-
-Give Creds Dont Be A Shitty Skid
-
-First Equip A Bat Then Run The Script And Let The Magic Happen ;)
-
-Press "Shift + F9" To View How Much Money You Have Made
-]]--
+-- Made By Yours Truly : $eba#6028
+-- Equip A Bat Before Running The Script
+-- No Need For An Anti-Afk Script I Already Took Care Of That
+-- Press "F9" Or Type "/console" And Only Have "Output" Checked, To See How Much Money You Have Made
+-- Enjoy The Magic ;)
 _G.CollectMoney = true
 _G.RunTheAutofarm = true
-_G.CurrentlyFarming = false
 _G.Tp = true
 _G.AtmsBroken = 0
 _G.SafesBroken = 0
 _G.CashiersBroken = 0
-local plr = game.Players.LocalPlayer
-local hum = plr.Character.HumanoidRootPart
+local CurrentCashGiver = 1
+local Humanoid = game.Players.LocalPlayer.Character.HumanoidRootPart
 local StartingCash = tonumber(game.Players.LocalPlayer.PlayerGui.Main_Gui.MiddleFrame.Extra.Cash.Text:sub(2))
 local virtualService = game:GetService'VirtualUser'
+local AllCashGivers = {}
 local SebsWhitelistedUsers = {
     1214427079, -- NoDripUnknown
     296345980, -- politieswat
@@ -26,6 +21,7 @@ local SebsWhitelistedUsers = {
     325366461, -- zombiesgod92
     3389903258, -- ProSussyPlayer23, zombiesgod92's alt
     347225808, -- ll_t8
+    3959920214, -- FalseRender
 }
 local function contains(table, val)
    for i=1,#table do
@@ -35,9 +31,14 @@ local function contains(table, val)
    end
    return false
 end
+local function SebsAddCashGiversToTable()
+    for _, v in pairs(game.Workspace.Cash_Givers:GetChildren()) do
+    	table.insert(AllCashGivers, v)
+    end
+end
 local function SebsDeleteStupidCashGivers()
     for i,v in pairs(game.Workspace.Cash_Givers:GetChildren()) do
-        if tostring(v:FindFirstChild("Part").CFrame) == "-935.349976, 9.97618961, 1123.07996, 0.435323417, -0, -0.900274158, 0, 1, -0, 0.900274158, 0, 0.435323417" then
+        if tostring(v:FindFirstChild("Part").CFrame) == "-935.35022, 9.97619057, 1123.07581, 0.435323417, -0, -0.900274158, 0, 1, -0, 0.900274158, 0, 0.435323417" then
             v:Remove()
         elseif tostring(v:FindFirstChild("Part").CFrame) == "-978.045959, 1.53571844, 815.165405, -1.1920929e-07, -0, -1.00000012, 0, 1, -0, 1.00000012, 0, -1.1920929e-07" then
             v:Remove()
@@ -70,32 +71,42 @@ local function SebsSendClick()
     virtualService:ClickButton1(Vector2.new(0,0))
 end
 local function SebsAutofarm()
-    for i,v in pairs(game.Workspace.Cash_Givers:GetChildren()) do
-        if v.Health.Value > 0 then
-            if v.Name == "Cashier" then
+    while _G.RunTheAutofarm do wait()
+        if AllCashGivers[CurrentCashGiver].Health.Value > 0 then
+            if AllCashGivers[CurrentCashGiver].Name == "Cashier" then
                 _G.WaitTime = 1.75
-                PartPosition = v:FindFirstChild("Part").Position
-            else
+                _G.CashiersBroken = _G.CashiersBroken + 1
+                PartPosition = AllCashGivers[CurrentCashGiver]:FindFirstChild("Part").Position
+            elseif AllCashGivers[CurrentCashGiver].Name == "Safe" then
                 _G.WaitTime = 3
-                PartPosition = v:FindFirstChild("Part").Position
+                _G.SafesBroken = _G.SafesBroken + 1
+                PartPosition = AllCashGivers[CurrentCashGiver]:FindFirstChild("Part").Position
+            elseif AllCashGivers[CurrentCashGiver].Name == "Atm" then
+                _G.WaitTime = 3
+                _G.AtmsBroken = _G.AtmsBroken + 1
+                PartPosition = AllCashGivers[CurrentCashGiver]:FindFirstChild("Part").Position
             end
             coroutine.wrap(function()
                 while _G.Tp do task.wait()
-                    hum.CFrame = CFrame.new(PartPosition)
+                    Humanoid.CFrame = CFrame.new(PartPosition)
                 end
             end)()
             _G.CheckHealth = true
             while _G.CheckHealth do task.wait(.25)
-                if v.Health.value <= 0 then
+                if AllCashGivers[CurrentCashGiver].Health.value <= 0 then
                     _G.CheckHealth = false
-                    break
                 else
                     SebsSendClick()
                 end
             end
             wait(_G.WaitTime)
-                local CurrentCash = tonumber(game.Players.LocalPlayer.PlayerGui.Main_Gui.MiddleFrame.Extra.Cash.Text:sub(2))
-                print('You Have Made :', CurrentCash - StartingCash)
+            local CurrentCash = tonumber(game.Players.LocalPlayer.PlayerGui.Main_Gui.MiddleFrame.Extra.Cash.Text:sub(2))
+            print('You Have Made :', '$' .. CurrentCash - StartingCash)
+            print('Atms Broken :', _G.AtmsBroken, '| Cashiers Broken :', _G.CashiersBroken, '| Safes Broken :', _G.SafesBroken .. '\n')
+            CurrentCashGiver = CurrentCashGiver + 1
+            if CurrentCashGiver == 32 then
+                CurrentCashGiver = 1
+            end
         end
     end
     SebsAutofarm()
@@ -183,17 +194,21 @@ local function SebsReduceLag()
         game.Workspace.Map['Script Misc']:Remove()
     end)
     local success, err = pcall(function()
+        game.Workspace.Camera:Remove()
+    end)
+   --[[local success, err = pcall(function()
         for i,v in next, workspace:GetDescendants() do
             if v:IsA'Seat' then
                 v:Destroy()
             end
         end
-    end)
+    end)]]--
 end
 
 local function IdkWhatToNameThisFunction()
     if contains(SebsWhitelistedUsers, game.Players.LocalPlayer.userId) then
         SebsDeleteStupidCashGivers()
+        SebsAddCashGiversToTable()
         SebsMoneyCollector()
         SebsReduceLag()
         SebsAutofarm()
